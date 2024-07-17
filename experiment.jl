@@ -116,7 +116,7 @@ function plot_experiment(filename, out_rmd, out_gd; size=(400,300), exp_spacing=
         end
 
         xlabel!("Iteration number")
-        ylabel!("Distance")
+        ylabel!(L"\|x_t - x^\sharp\|_1")
 
         xaxis!(:log10)
         yaxis!(:log10)
