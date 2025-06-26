@@ -89,7 +89,7 @@ end
 Plotting
 ===================================================#
 
-function plot_experiment(filename, out_rmd, out_gd; size=(400,300), exp_spacing=1.1)
+function plot_loglog_experiment(filename, out_rmd_loglog, out_gd_loglog; size=(300,250), exp_spacing=1.1)
     results = load(filename)
     rmd_iter_infos = results["rmd_iter_infos"]
     gd_iter_infos = results["gd_iter_infos"]
@@ -98,7 +98,7 @@ function plot_experiment(filename, out_rmd, out_gd; size=(400,300), exp_spacing=
     
     idxs = unique(Int.(round.([exp_spacing^k for k = 1:Int(round(log2(10^5)/log2(exp_spacing)))])))
 
-    for (out, iter_infos) in [(out_rmd, rmd_iter_infos), (out_gd, gd_iter_infos)]
+    for (out, iter_infos) in [(out_rmd_loglog, rmd_iter_infos), (out_gd_loglog, gd_iter_infos)]
         Plots.plot()
         colors = palette(:default)[1:num_ns]'
         for (i, n) in enumerate(ns)
@@ -109,22 +109,57 @@ function plot_experiment(filename, out_rmd, out_gd; size=(400,300), exp_spacing=
             dists = dists[[i for i in idxs if i <= length(dists)]]
 
             Plots.plot!(
-                iters, 
+                iters .+ 1, # hack to play well with log scale 
                 dists,
                 lw=1.0, linecolor=colors[i],
                 label=latexstring("n = ", n))
         end
 
         xlabel!("Iteration number")
-        ylabel!(L"\|x_t - x^\sharp\|_1")
+        ylabel!(L"\|x_t - x^\natural\|_1")
 
         xaxis!(:log10)
         yaxis!(:log10)
 
-        Plots.plot!(xtickfontsize=10, xguidefontsize=10, ytickfontsize=10, yguidefontsize=10,leg=Symbol(:outer,:top), legend_columns=num_ns, size=size,ylim=[10^-5, 10], xlim=[1,10^5])
+        Plots.plot!(xtickfontsize=10, xguidefontsize=10, ytickfontsize=10, yguidefontsize=10,leg=false, size=size,ylim=[10^-5, 10], xlim=[1,10^5])
         Plots.savefig(out)
     end
 end
+
+
+function plot_log_experiment(filename, out; size=(300,250), spacing = 10)
+    results = load(filename)
+    iter_infos = results["rmd_iter_infos"]
+    ns = results["ns"]
+    num_ns = length(ns)
+    
+    idxs = [Int(round(spacing * i)) for i=1:Int(round(10^5/spacing))]
+
+    Plots.plot()
+    colors = palette(:default)[1:num_ns]'
+    for (i, n) in enumerate(ns)
+        iters = iter_infos[i].iter_nums
+        dists = iter_infos[i].dists
+
+        iters = iters[[i for i in idxs if i <= length(iters)]]
+        dists = dists[[i for i in idxs if i <= length(dists)]]
+
+        Plots.plot!(
+            iters, 
+            dists,
+            lw=1.0, linecolor=colors[i],
+            label=latexstring("n = ", n))
+
+        xlabel!("Iteration number")
+        ylabel!(L"\|x_t - x^\natural\|_1")
+    end
+
+    yaxis!(:log10)
+
+    Plots.plot!(xtickfontsize=10, xguidefontsize=10, ytickfontsize=10, yguidefontsize=10,leg=false, size=size,ylim=[10^-5, 10], xlim=[0,10^5], xticks = [0:(0.3*10^5):(1.2*10^5);])
+    Plots.savefig(out)
+end
+
 
 #===================================================
 Script
@@ -139,9 +174,11 @@ ratio = 2
 # Save locations
 results_log = "./results/experiment_log.txt"
 results_data = "./results/experiment.jld2"
-rmd_plot = "./results/rmd_plot.pdf"
-gd_plot = "./results/polyak_gd_plot.pdf"
+rmd_loglog_plot = "./results/rmd_loglog_plot.pdf"
+rmd_log_plot = "./results/rmd_log_plot.pdf"
+gd_loglog_plot = "./results/polyak_gd_loglog_plot.pdf"
 
 #   
 run_tests(sizes, k, r, ratio, results_log, results_data)
-plot_experiment(results_data, rmd_plot, gd_plot)
+plot_loglog_experiment(results_data, rmd_loglog_plot, gd_loglog_plot)
+plot_log_experiment(results_data, rmd_log_plot)

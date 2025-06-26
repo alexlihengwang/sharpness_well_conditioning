@@ -65,6 +65,7 @@ end
 
 function polyak_rmd(prob::MDProblem, x̄::Array{Float64}, K::Int64; iter_info::Union{Iterate_info,Nothing}=nothing, α::Float64=exp(1/2))
     # Implements Polyak-RMD (Algorithm 3)
+    !isnothing(iter_info) && push_iterate!(iter_info, x̄)
     for k=1:K
         val, x̄, flag = mirror_descent(prob, x̄; iter_info=iter_info, α=α)
         flag || break
@@ -85,6 +86,7 @@ function polyak_subgradient(prob::MDProblem, x̄::Array{Float64}; max_iters::Int
     # Implements subgradient descent with Polyak step-size
     
     x = copy(x̄)
+    !isnothing(iter_info) && push_iterate!(iter_info, x)
 
     for t = 1:max_iters
         val, g = f_oracle(prob, x)
